@@ -2,15 +2,54 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-import pyeto
+import math
 from datetime import datetime
+
+# ==========================================
+# 0. MOTOR TERMODINÁMICO NATIVO (Reemplaza a PyETo)
+# ==========================================
+def calcular_penman_monteith(tmax, tmin, rh, u2, rs, elev, lat, dia, albedo=0.08):
+    lat_rad = math.radians(lat)
+    t_media = (tmax + tmin) / 2.0
+    
+    # Presión atmosférica y Constante psicrométrica (gamma)
+    P = 101.3 * ((293 - 0.0065 * elev) / 293) ** 5.26
+    gamma = 0.000665 * P
+    
+    # Pendiente curva presión vapor (delta)
+    delta = 4098 * (0.6108 * math.exp((17.27 * t_media) / (t_media + 237.3))) / ((t_media + 237.3) ** 2)
+    
+    # Déficit de presión de vapor (VPD)
+    es_tmax = 0.6108 * math.exp((17.27 * tmax) / (tmax + 237.3))
+    es_tmin = 0.6108 * math.exp((17.27 * tmin) / (tmin + 237.3))
+    es = (es_tmax + es_tmin) / 2.0
+    ea = es * (rh / 100.0) 
+    vpd = es - ea
+    
+    # Radiación Neta
+    rns = (1 - albedo) * rs
+    sol_dec = 0.409 * math.sin(((2 * math.pi) / 365) * dia - 1.39)
+    sha = math.acos(-math.tan(lat_rad) * math.tan(sol_dec))
+    ird = 1 + 0.033 * math.cos(((2 * math.pi) / 365) * dia)
+    ra = (24 * 60 / math.pi) * 0.0820 * ird * (sha * math.sin(lat_rad) * math.sin(sol_dec) + math.cos(lat_rad) * math.cos(sol_dec) * math.sin(sha))
+    rso = (0.75 + 2e-5 * elev) * ra
+    
+    # Radiación onda larga
+    rs_rso = min(rs / rso, 1.0) if rso > 0 else 0.5
+    rnl = 4.903e-9 * (((tmax + 273.16)**4 + (tmin + 273.16)**4) / 2) * (0.34 - 0.14 * math.sqrt(ea)) * (1.35 * rs_rso - 0.35)
+    rn = rns - rnl
+    
+    # Términos Ecuación Penman
+    term_rad = (0.408 * delta * rn) / (delta + gamma)
+    term_aero = (gamma * 2.626 * (1 + 0.536 * u2) * vpd) / (delta + gamma)
+    
+    return term_rad, term_aero, term_rad + term_aero
 
 # ==========================================
 # 1. CONFIGURACIÓN GENERAL Y ESTILOS
 # ==========================================
 st.set_page_config(page_title="Piloto Piedras Blancas", page_icon="💧", layout="wide")
 
-# Estilos CSS inyectados para darle apariencia ejecutiva
 st.markdown("""
 <style>
     .metric-card {
@@ -22,13 +61,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# URLs de Logos
+# URLs de Logos (Desde Supabase)
 LOGO_CUENCA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/CuencaVerdeLogo_V1.JPG"
 LOGO_EPM = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_epm.png"
 LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_distritoMedellin.png"
 
 # ==========================================
-# 2. CABEZOTE EJECUTIVO (SLIDE 1)
+# 2. CABEZOTE EJECUTIVO
 # ==========================================
 col_l1, col_l2, col_l3, col_spc = st.columns([1, 1, 1, 5])
 with col_l1: st.image(LOGO_CUENCA, use_container_width=True)
@@ -64,7 +103,7 @@ tabs = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: DIAGNÓSTICO TERRITORIAL (SLIDE 2)
+# TAB 1: DIAGNÓSTICO TERRITORIAL
 # ---------------------------------------------------------
 with tabs[0]:
     st.header("Contexto Socio-Hidroclimático: La Vulnerabilidad de Piedras Blancas")
@@ -93,7 +132,7 @@ with tabs[0]:
         st.info("🦠 **3. Presión Social y Riesgo de Eutrofización**\n\nEn el 1T de 2027 aumenta la demanda en Santa Elena y el oriente de Medellín, mientras que la radiación acelera la floración de cianobacterias (algas) que encarecen la potabilización.")
 
 # ---------------------------------------------------------
-# TAB 2: CICLO HIDROLÓGICO (SLIDE 3)
+# TAB 2: CICLO HIDROLÓGICO
 # ---------------------------------------------------------
 with tabs[1]:
     st.header("El Ciclo Hidrológico: ¿Qué Variable Podemos Controlar Realmente Hoy?")
@@ -123,7 +162,7 @@ with tabs[1]:
         """)
 
 # ---------------------------------------------------------
-# TAB 3: FÍSICA Y MÉTODO (SLIDE 4 + DINAMICA_EVAPORACION.TXT)
+# TAB 3: FÍSICA Y MÉTODO NATIVO
 # ---------------------------------------------------------
 with tabs[2]:
     st.header("Mecanismos Físicos: Termodinámica Atmosférica (Penman-Monteith)")
@@ -144,7 +183,7 @@ with tabs[2]:
         """)
 
     with col_fis2:
-        st.subheader("🔬 Laboratorio PyETo: Piedras Blancas en Vivo")
+        st.subheader("🔬 Laboratorio Termodinámico: Piedras Blancas en Vivo")
         with st.expander("Ajustar Condiciones Climáticas (Simulación)", expanded=True):
             cc1, cc2 = st.columns(2)
             tmax = cc1.slider("Temp. Máxima (°C)", 15.0, 35.0, 23.5)
@@ -153,31 +192,8 @@ with tabs[2]:
             u2 = cc2.slider("Viento a 2m (m/s)", 0.5, 6.0, 2.8)
             rs = st.slider("Radiación Solar (MJ/m²/día)", 10.0, 30.0, 20.5)
 
-        # Cálculos de PyETo (Del archivo txt provisto por el usuario)
-        lat_rad = pyeto.deg2rad(6.29)
-        t_media = (tmax + tmin) / 2.0
-        P = pyeto.atm_pressure(2350.0)
-        gamma = pyeto.psy_const(P)
-        delta = pyeto.delta_svp(t_media)
-        es_tmax = pyeto.svp_from_t(tmax)
-        es_tmin = pyeto.svp_from_t(tmin)
-        es = (es_tmax + es_tmin) / 2.0
-        ea = pyeto.avp_from_rhmean(es_tmin, es_tmax, rh)
-        vpd = es - ea
-
-        rns = pyeto.net_in_sw_rad(rs, albedo=0.08)
-        sol_dec = pyeto.sol_dec(345) # Pleno Diciembre
-        sha = pyeto.sunset_hour_angle(lat_rad, sol_dec)
-        ird = pyeto.inv_rel_dist_earth_sun(345)
-        ra = pyeto.et_rad(lat_rad, sol_dec, sha, ird)
-        rso = pyeto.cs_rad(2350.0, ra)
-        rnl = pyeto.net_out_lw_rad(tmin, tmax, rs, rso, ea)
-        rn = rns - rnl
-
-        term_rad = (0.408 * delta * rn) / (delta + gamma)
-        E_a = 2.626 * (1 + 0.536 * u2) * vpd
-        term_aero = (gamma * E_a) / (delta + gamma)
-        evap_total = term_rad + term_aero
+        # Usar la función matemática nativa en lugar de pyeto
+        term_rad, term_aero, evap_total = calcular_penman_monteith(tmax, tmin, rh, u2, rs, elev=2350.0, lat=6.29, dia=345)
 
         fig_pie = go.Figure(data=[go.Pie(
             labels=['Motor Radiativo (Solar)', 'Motor Aerodinámico (Viento/VPD)'],
@@ -188,7 +204,7 @@ with tabs[2]:
         st.plotly_chart(fig_pie, use_container_width=True)
 
 # ---------------------------------------------------------
-# TAB 4: TECNOLOGÍAS Y VALOR PÚBLICO (SLIDE 5 Y 7)
+# TAB 4: TECNOLOGÍAS Y VALOR PÚBLICO
 # ---------------------------------------------------------
 with tabs[3]:
     st.header("Ingeniería de Mitigación y Creación de Valor")
@@ -210,7 +226,7 @@ with tabs[3]:
     b4.error("**🚀 Escalabilidad Regional:** Piedras Blancas es el laboratorio perfecto antes de saltar a La Fe y Río Grande II.")
 
 # ---------------------------------------------------------
-# TAB 5: SIMULADOR DEL PILOTO (SLIDE 6 REFINADO)
+# TAB 5: SIMULADOR DEL PILOTO
 # ---------------------------------------------------------
 with tabs[4]:
     st.header("🎛️ Simulador del Proyecto Piloto y Caso de Negocio")
@@ -239,7 +255,6 @@ with tabs[4]:
         dias_estiaje = st.slider("Ventana Crítica / Temporalidad (días):", 30, 180, 60, 15)
 
     with col_kpi:
-        # Lógica matemática unificada
         area_cub = area_eval * (pct_cob / 100.0)
         ev_dia = 4.35
         if "Crítico" in clima_sim: ev_dia = 5.10
@@ -284,7 +299,7 @@ with tabs[4]:
         st.plotly_chart(fig_sim, use_container_width=True)
 
 # ---------------------------------------------------------
-# TAB 6: RUTA CRÍTICA (SLIDE 8)
+# TAB 6: RUTA CRÍTICA
 # ---------------------------------------------------------
 with tabs[5]:
     st.header("Ruta Crítica de Acción: Octubre 2026 – Primer Trimestre 2027")
