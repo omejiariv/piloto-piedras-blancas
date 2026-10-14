@@ -14,7 +14,7 @@ LOGO_EPM = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/im
 LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_distritoMedellin.png"
 
 # Cabezote Institucional
-col1, col2, col3, col_vacia = st.columns([1, 1, 1, 5])
+col1, col2, col3, col_vacia = st.columns([1, 1, 1, 10])
 with col1: st.image(LOGO_CUENCA, use_container_width=True)
 with col2: st.image(LOGO_EPM, use_container_width=True)
 with col3: st.image(LOGO_ALCALDIA, use_container_width=True)
