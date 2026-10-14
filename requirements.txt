@@ -1,3 +1,7 @@
 streamlit
 pandas
 plotly
+folium
+pydataxm
+openpyxl
+requests
