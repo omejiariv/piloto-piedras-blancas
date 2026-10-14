@@ -5,12 +5,10 @@ import plotly.express as px
 import math
 import requests
 import io
-import os
-import re
 from datetime import datetime
 
 # ==========================================
-# 0. MOTORES MATEMÁTICOS Y CACHÉ DE DATOS
+# 0. MOTORES MATEMÁTICOS Y CACHÉ
 # ==========================================
 def calcular_penman_monteith(tmax, tmin, rh, u2, rs, elev, lat, dia, albedo=0.08):
     """Motor Termodinámico Nativo (Reemplaza a PyETo)"""
@@ -49,280 +47,370 @@ def cargar_datos_embalses():
                 lambda x: x * 1000 if pd.notnull(x) and x < 10 else x
             )
         return df
-    except Exception as e:
+    except Exception:
         return pd.DataFrame()
 
 df_embalses = cargar_datos_embalses()
 
-# Mapeo de Coordenadas Base
-coords_embalses = {
-    "Guatapé (El Peñol)": (6.26, -75.16), "Hidroituango": (7.13, -75.67), 
-    "Jaguas": (6.31, -75.02), "La Fe": (6.11, -75.50), "Piedras Blancas": (6.29, -75.49), 
-    "Playas": (6.27, -74.95), "Porce II": (6.75, -75.15), "Porce III": (6.80, -75.10), 
-    "Riogrande II": (6.55, -75.45), "San Carlos": (6.21, -74.85)
-}
-
 # ==========================================
-# 1. CONFIGURACIÓN DE PÁGINA Y CABEZOTE
+# 1. CONFIGURACIÓN GENERAL Y SÚPER-ESTILOS
 # ==========================================
-st.set_page_config(page_title="Seguridad Hídrica Medellín", page_icon="💧", layout="wide")
+st.set_page_config(page_title="Piloto Piedras Blancas", page_icon="💧", layout="wide", initial_sidebar_state="collapsed")
 
+# Inyección de CSS estilo Tailwind Dark Mode para Streamlit
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.5rem; }
-    .metric-card { background-color: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 10px; }
-    .metric-title { color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase;}
-    .metric-value { color: #38bdf8; font-size: 1.8rem; font-weight: 800; margin: 5px 0;}
-    .metric-sub { color: #cbd5e1; font-size: 0.75rem;}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    
+    /* Variables y Reset de Streamlit */
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+    
+    .block-container {
+        padding-top: 1rem !important; 
+        padding-bottom: 2rem !important;
+        max-width: 1300px;
+    }
+
+    /* Estilos de Tarjetas (Cards) replicando Tailwind */
+    .glass-card {
+        background-color: #1e293b; 
+        border: 1px solid rgba(148, 163, 184, 0.2); 
+        border-radius: 12px; 
+        padding: 24px; 
+        color: #f8fafc;
+        height: 100%;
+    }
+    
+    .kpi-box {
+        background: #0f172a; 
+        padding: 20px; 
+        border-radius: 12px; 
+        border: 1px solid #334155;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+    }
+    .kpi-title { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .kpi-val { font-size: 2.5rem; font-weight: 800; line-height: 1.1; margin: 5px 0 10px 0; }
+    .kpi-desc { font-size: 0.85rem; color: #cbd5e1; line-height: 1.4; }
+    .kpi-foot { font-size: 0.75rem; font-weight: 700; margin-top: 15px; display: inline-block;}
+    
+    /* Bordes de color para Ruta Crítica */
+    .border-top-sky { border-top: 4px solid #38bdf8; }
+    .border-top-emerald { border-top: 4px solid #10b981; }
+    .border-top-amber { border-top: 4px solid #f59e0b; }
+    .border-top-purple { border-top: 4px solid #a855f7; }
+    
+    /* Headers personalizados */
+    .section-title { font-size: 1.8rem; font-weight: 700; color: #ffffff; margin-bottom: 5px; }
+    .section-subtitle { font-size: 1rem; color: #94a3b8; margin-bottom: 20px; }
 </style>
 """, unsafe_allow_html=True)
 
-# Logos Institucionales
-col_l1, col_l2, col_l3, col_spc = st.columns([0.5, 0.5, 0.5, 3])
-with col_l1: st.image("https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/CuencaVerdeLogo_V1.JPG", use_container_width=True)
-with col_l2: st.image("https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_epm.png", use_container_width=True)
-with col_l3: st.image("https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_distritoMedellin.png", use_container_width=True)
+# URLs de Logos (Desde Supabase)
+LOGO_CUENCA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/CuencaVerdeLogo_V1.JPG"
+LOGO_EPM = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_epm.png"
+LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_distritoMedellin.png"
+
+# ==========================================
+# 2. CABEZOTE EJECUTIVO
+# ==========================================
+col_l1, col_l2, col_l3, col_spc = st.columns([1, 1, 1, 15])
+with col_l1: st.image(LOGO_CUENCA, use_container_width=True)
+with col_l2: st.image(LOGO_EPM, use_container_width=True)
+with col_l3: st.image(LOGO_ALCALDIA, use_container_width=True)
 
 st.markdown("""
-<div style="background: linear-gradient(90deg, #0f172a, #1e293b); padding: 25px; border-radius: 15px; border-left: 5px solid #38bdf8; margin-top: 0px; margin-bottom: 25px;">
-    <h4 style="color: #38bdf8; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">🛡️ Proyecto Piloto de Adaptación Hidroclimática Inmediata</h4>
-    <h1 style="color: white; margin: 5px 0 10px 0; font-size: 2.5rem;">Blindaje Evaporativo del Embalse Piedras Blancas ante El Niño (2026-2027)</h1>
-    <p style="color: #cbd5e1; font-size: 1.1rem; margin: 0;">Estrategia proactiva para cosechar las lluvias de <b>octubre y noviembre de 2026</b> y sellar la lámina de agua mediante tecnologías flotantes, mitigando el riesgo de desabastecimiento en <b>diciembre de 2026 y el 1T de 2027</b>.</p>
+<div style="background: radial-gradient(circle at top right, #1e293b, #0f172a 70%); padding: 30px; border-radius: 15px; border-left: 5px solid #38bdf8; margin-top: 5px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);">
+    <h4 style="color: #38bdf8; margin: 0 0 10px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">🛡️ Proyecto Piloto de Adaptación Hidroclimática Inmediata</h4>
+    <h1 style="color: white; margin: 0 0 10px 0; font-size: 2.8rem; font-weight: 800; line-height: 1.1;">Blindaje Evaporativo del Embalse Piedras Blancas ante El Niño (2026-2027)</h1>
+    <p style="color: #cbd5e1; font-size: 1.1rem; margin: 0; line-height: 1.5;">Estrategia proactiva para cosechar las lluvias de <b>octubre y noviembre de 2026</b> y sellar la lámina de agua mediante tecnologías flotantes, mitigando el riesgo de desabastecimiento en <b>diciembre de 2026 y el 1T de 2027</b>.</p>
 </div>
 """, unsafe_allow_html=True)
 
 c1, c2, c3, c4 = st.columns(4)
-c1.markdown('<div class="metric-card"><div class="metric-title">Sistema Objetivo</div><div class="metric-value" style="color: white; font-size: 1.2rem;">Embalse Piedras Blancas</div><div class="metric-sub text-sky-400">Coord: 6.29° N, -75.49° W</div></div>', unsafe_allow_html=True)
-c2.markdown('<div class="metric-card"><div class="metric-title">Capacidad de Reserva</div><div class="metric-value" style="color: #fbbf24;">0.50 Millones de m³</div><div class="metric-sub">Acueducto EPM (Oriente Medellín)</div></div>', unsafe_allow_html=True)
-c3.markdown('<div class="metric-card"><div class="metric-title">Variable de Intervención</div><div class="metric-value" style="color: #34d399;">Control Evaporativo</div><div class="metric-sub">Impacto inmediato (50% - 85%)</div></div>', unsafe_allow_html=True)
-c4.markdown('<div class="metric-card"><div class="metric-title">Ventana de Ejecución</div><div class="metric-value" style="color: #fb7185;">Oct - Nov 2026</div><div class="metric-sub">Previo al estiaje Dic 26 - Mar 27</div></div>', unsafe_allow_html=True)
-st.write("")
+c1.markdown('<div class="kpi-box"><div class="kpi-title">Sistema Objetivo</div><div class="kpi-val" style="color: white; font-size: 1.3rem;">Embalse Piedras Blancas</div><div class="kpi-desc" style="color: #38bdf8; font-weight: 600;">Coord: 6.29° N, -75.49° W</div></div>', unsafe_allow_html=True)
+c2.markdown('<div class="kpi-box"><div class="kpi-title">Capacidad de Reserva</div><div class="kpi-val" style="color: #fbbf24; font-size: 1.5rem;">0.50 Millones de m³</div><div class="kpi-desc">Acueducto EPM (Oriente Medellín)</div></div>', unsafe_allow_html=True)
+c3.markdown('<div class="kpi-box"><div class="kpi-title">Variable de Intervención</div><div class="kpi-val" style="color: #34d399; font-size: 1.5rem;">Control Evaporativo</div><div class="kpi-desc">Impacto inmediato (50% - 85%)</div></div>', unsafe_allow_html=True)
+c4.markdown('<div class="kpi-box"><div class="kpi-title">Ventana de Ejecución</div><div class="kpi-val" style="color: #fb7185; font-size: 1.5rem;">Oct - Nov 2026</div><div class="kpi-desc">Previo al estiaje Dic 26 - Mar 27</div></div>', unsafe_allow_html=True)
+
+st.write("") 
 
 # ==========================================
-# 2. MEGA-NAVEGACIÓN (8 PESTAÑAS)
+# 3. NAVEGACIÓN EN PESTAÑAS (TABS)
 # ==========================================
 tabs = st.tabs([
     "🌍 1. Diagnóstico", 
-    "🔄 2. Ciclo Hidrológico", 
+    "🔄 2. Gobernanza", 
     "🔬 3. Física Evaporativa", 
-    "💡 4. Tecnologías y Valor", 
-    "📊 5. Base Maestra y Mapas", 
-    "🎛️ 6. Simulador Piloto",
-    "📡 7. Telemetría XM",
-    "🚀 8. Ruta Crítica"
+    "💡 4. Creación de Valor", 
+    "🎛️ 5. Simulador Piloto", 
+    "🚀 6. Ruta Crítica"
 ])
 
-# -----------------------------------------
-# TAB 1: DIAGNÓSTICO
-# -----------------------------------------
+# ---------------------------------------------------------
+# TAB 1: DIAGNÓSTICO TERRITORIAL
+# ---------------------------------------------------------
 with tabs[0]:
-    st.header("Contexto Socio-Hidroclimático: La Vulnerabilidad de Piedras Blancas")
-    col_diag1, col_diag2 = st.columns([1.2, 1])
+    st.markdown('<div class="section-title">Contexto Socio-Hidroclimático: La Vulnerabilidad de Piedras Blancas</div>', unsafe_allow_html=True)
     
+    col_diag1, col_diag2 = st.columns([1.2, 1])
     with col_diag1:
-        st.subheader("Asimetría en el Sistema de Reservas (EPM)")
-        st.markdown("A diferencia de los grandes embalses interconectados, **Piedras Blancas (0.5 Mm³)** abastece el oriente alto de Medellín y opera con un margen milimétrico.")
+        st.markdown('<div class="glass-card"><h3>Asimetría en el Sistema de Reservas (EPM)</h3><p style="color:#94a3b8; font-size:0.9rem;">A diferencia de los grandes embalses interconectados, Piedras Blancas posee una capacidad volumétrica reducida y opera con un margen de maniobra milimétrico.</p></div>', unsafe_allow_html=True)
         df_vol = pd.DataFrame({"Embalse": ["Río Grande II", "La Fe", "Piedras Blancas"], "Volumen (Mm³)": [138.8, 11.1, 0.5], "Color": ["#38bdf8", "#34d399", "#fbbf24"]})
         fig_vol = px.bar(df_vol, y="Embalse", x="Volumen (Mm³)", text="Volumen (Mm³)", orientation='h')
-        fig_vol.update_traces(marker_color=df_vol["Color"], textposition='outside')
-        fig_vol.update_layout(height=220, margin=dict(t=10, b=10, l=10, r=10), xaxis=dict(type='log', title="Volumen (Escala Logarítmica)"))
+        fig_vol.update_traces(marker_color=df_vol["Color"], textposition='outside', textfont=dict(color='white'))
+        fig_vol.update_layout(height=220, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#cbd5e1'), margin=dict(t=10, b=10, l=10, r=10), xaxis=dict(type='log', title="Volumen (Escala Logarítmica)", showgrid=False))
         st.plotly_chart(fig_vol, use_container_width=True)
 
     with col_diag2:
-        st.error("☀️ **1. Pérdida de la 'Manta Natural' bajo El Niño**\n\nUbicado a ~2,350 msnm. Con El Niño, se rompe la cobertura nubosa, aumentando la radiación solar (+15%), la temperatura y la 'sed' atmosférica.")
-        st.warning("📐 **2. Efecto 'Bandeja'**\n\nSu ratio morfológico es muy bajo (≈ 0.025 Mm³/ha). Expone demasiada superficie térmica por cada metro cúbico almacenado.")
-        st.info("🦠 **3. Riesgo de Eutrofización**\n\nEn el 1T 2027 aumenta la demanda, mientras que la radiación acelera la floración de cianobacterias que encarecen la potabilización.")
+        st.markdown("""
+        <div class="glass-card" style="margin-bottom: 15px;">
+            <strong style="color: #fbbf24; font-size: 1.1rem;">☀️ 1. Pérdida de la "Manta Natural" bajo El Niño</strong><br>
+            <span style="font-size: 0.9rem; color: #cbd5e1;">Ubicado a ~2,350 msnm. Con El Niño, se rompe la cobertura nubosa, aumentando la radiación solar directa, la temperatura (+2°C) y la "sed" atmosférica.</span>
+        </div>
+        <div class="glass-card" style="margin-bottom: 15px;">
+            <strong style="color: #fb7185; font-size: 1.1rem;">📐 2. Morfología Tipo "Bandeja"</strong><br>
+            <span style="font-size: 0.9rem; color: #cbd5e1;">Con ~0.5 Mm³ en 20 hectáreas, su ratio morfológico es bajísimo. Expone una gran superficie térmica por cada metro cúbico almacenado.</span>
+        </div>
+        <div class="glass-card">
+            <strong style="color: #a855f7; font-size: 1.1rem;">🦠 3. Riesgo de Eutrofización en Estiaje</strong><br>
+            <span style="font-size: 0.9rem; color: #cbd5e1;">En el 1T de 2027 aumenta la demanda, mientras que la radiación acelera floraciones de algas que comprometen y encarecen la potabilización.</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-# -----------------------------------------
-# TAB 2: CICLO HIDROLÓGICO
-# -----------------------------------------
+# ---------------------------------------------------------
+# TAB 2: GOBERNANZA Y CICLO
+# ---------------------------------------------------------
 with tabs[1]:
-    st.header("Gobernabilidad Real de las Variables del Ciclo")
+    st.markdown('<div class="section-title">El Ciclo Hidrológico: ¿Qué Variable Podemos Controlar Realmente Hoy?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Para evitar la crisis de diciembre 2026 y el 1T de 2027, debemos concentrar la inversión donde existe gobernabilidad humana inmediata.</div>', unsafe_allow_html=True)
+    
     c1, c2, c3 = st.columns(3)
-    with c1:
-        st.error("🌧️ 1. Precipitación (P) | CONTROL: ~0%")
-        st.markdown("* **Mecanismo:** Fenómenos macroclimáticos.\n* **Maniobra:** Nula. No podemos hacer llover.\n* **Estrategia:** Retener al máximo las lluvias actuales.")
-    with c2:
-        st.warning("🌲 2. Caudales Base (Qb) | CONTROL: LARGO PLAZO")
-        st.markdown("* **Mecanismo:** Recarga de bosques y suelos.\n* **Maniobra:** SbN y reforestación.\n* **Límite:** Toma de 5 a 15 años. No salva la crisis 2027.")
-    with c3:
-        st.success("☀️ 3. Evaporación (E) | CONTROL: INMEDIATO (85%)")
-        st.markdown("* **Mecanismo:** Escape en el espejo de agua libre.\n* **Maniobra:** Directa. Aislar la interfaz agua-aire.\n* **Decisión:** Única palanca de ingeniería que responde en semanas.")
+    c1.markdown("""<div class="glass-card border-top-sky">
+        <h3 style="color: white; margin-top:0;">🌧️ 1. Precipitación (P)</h3>
+        <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">CONTROL HUMANO: ~0%</span>
+        <p style="font-size: 0.9rem; margin-top: 15px; color: #cbd5e1;">Depende de fenómenos a escala planetaria. No podemos fabricar lluvias en pleno fenómeno de El Niño. Su dependencia es pasiva.</p>
+        <p style="font-size: 0.85rem; color: #38bdf8; font-weight: 600;">Estrategia: Cosechar las últimas lluvias en Oct-Nov.</p>
+    </div>""", unsafe_allow_html=True)
+    
+    c2.markdown("""<div class="glass-card border-top-amber">
+        <h3 style="color: white; margin-top:0;">🌲 2. Caudales Base (Qb)</h3>
+        <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">CONTROL: LARGO PLAZO</span>
+        <p style="font-size: 0.9rem; margin-top: 15px; color: #cbd5e1;">Recarga lenta del bosque altoandino (SbN). Toma de 5 a 15 años de maduración ecológica para generar impacto volumétrico real.</p>
+        <p style="font-size: 0.85rem; color: #fbbf24; font-weight: 600;">Límite: No aportará litros nuevos para Enero 2027.</p>
+    </div>""", unsafe_allow_html=True)
+    
+    c3.markdown("""<div class="glass-card border-top-emerald" style="background-color: rgba(16, 185, 129, 0.05); border-color: #10b981;">
+        <h3 style="color: #10b981; margin-top:0;">☀️ 3. Evaporación (E)</h3>
+        <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">CONTROL: 50% AL 85% (INMEDIATO)</span>
+        <p style="font-size: 0.9rem; margin-top: 15px; color: #cbd5e1;">Ocurre en un polígono pequeño y accesible (~20 ha). Aislar físicamente la interfaz agua-aire frena la pérdida casi por completo en semanas.</p>
+        <p style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Decisión: Única variable que reacciona a tiempo.</p>
+    </div>""", unsafe_allow_html=True)
 
-# -----------------------------------------
-# TAB 3: FÍSICA EVAPORATIVA (LABORATORIO PyETo/Nativo)
-# -----------------------------------------
+# ---------------------------------------------------------
+# TAB 3: FÍSICA EVAPORATIVA Y GRÁFICO MENSUAL
+# ---------------------------------------------------------
 with tabs[2]:
-    st.header("Simulador Termodinámico: Ecuación de Penman-Monteith (Agua Libre)")
-    st.markdown("Desde la perspectiva hidrológica, mientras que el flujo superficial es impulsado por la gravedad, la evaporación es traccionada por la **radiación solar** y el **déficit de presión de vapor (VPD)**.")
+    st.markdown('<div class="section-title">Mecanismos Físicos de la Evaporación: Radiación Solar y Viento</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Tasa de Evaporación Mensual en Embalse — Descomposición del término radiativo (energía) y aerodinámico (viento)</div>', unsafe_allow_html=True)
     
-    col_f1, col_f2 = st.columns([1, 2])
-    with col_f1:
-        st.info("⚙️ **Parámetros Atmosféricos**")
-        altitud = st.number_input("Altitud (msnm)", value=2350.0, step=50.0)
-        latitud = st.number_input("Latitud (°)", value=6.29, step=0.1)
-        dia_ano = st.slider("Día del año", min_value=1, max_value=365, value=345) # Diciembre
-        t_max = st.slider("Temp. Máxima (°C)", 15.0, 40.0, 23.5)
-        t_min = st.slider("Temp. Mínima (°C)", 5.0, 25.0, 11.5)
-        rh_media = st.slider("Humedad Relativa (%)", 30.0, 100.0, 65.0)
-        viento_2m = st.slider("Viento a 2m (m/s)", 0.0, 10.0, 2.8)
-        rs = st.slider("Radiación Solar (MJ/m²/día)", 5.0, 30.0, 20.5)
-        albedo_agua = st.number_input("Albedo del Agua", value=0.08, step=0.01, format="%.2f")
-
-    with col_f2:
-        # Cálculo Termodinámico Integrado
-        t_rad, t_aero, e_total, vpd_val, rn_val, patm = calcular_penman_monteith(
-            t_max, t_min, rh_media, viento_2m, rs, altitud, latitud, dia_ano, albedo_agua
+    col_chart, col_exp = st.columns([2, 1])
+    
+    with col_chart:
+        st.markdown('<div class="glass-card" style="padding: 15px;">', unsafe_allow_html=True)
+        # Reconstrucción de la data exacta del script HTML suministrado por el usuario
+        data_evap = [
+            {"month":"Ene","rad":85,"wind":30,"total":115}, {"month":"Feb","rad":90,"wind":25,"total":115},
+            {"month":"Mar","rad":95,"wind":20,"total":115}, {"month":"Abr","rad":80,"wind":15,"total":95},
+            {"month":"May","rad":70,"wind":15,"total":85}, {"month":"Jun","rad":65,"wind":20,"total":85},
+            {"month":"Jul","rad":75,"wind":35,"total":110}, {"month":"Ago","rad":85,"wind":40,"total":125},
+            {"month":"Sep","rad":90,"wind":25,"total":115}, {"month":"Oct","rad":80,"wind":15,"total":95},
+            {"month":"Nov","rad":75,"wind":20,"total":95}, {"month":"Dic","rad":80,"wind":25,"total":105}
+        ]
+        df_chart = pd.DataFrame(data_evap)
+        
+        # Gráfica Plotly Lineal simulando el Chart.js del HTML original
+        fig_line = go.Figure()
+        fig_line.add_trace(go.Scatter(x=df_chart["month"], y=df_chart["total"], mode='lines+markers', name='Evaporación Total', line=dict(color='#38bdf8', width=3), marker=dict(size=8, color='#0f172a', line=dict(width=2, color='#38bdf8'))))
+        fig_line.add_trace(go.Scatter(x=df_chart["month"], y=df_chart["rad"], mode='lines+markers', name='Radiación (Energía)', line=dict(color='#94a3b8', width=2.5), marker=dict(size=7, color='#0f172a', line=dict(width=2, color='#94a3b8'))))
+        fig_line.add_trace(go.Scatter(x=df_chart["month"], y=df_chart["wind"], mode='lines+markers', name='Viento (Aerodinámico)', line=dict(color='#10b981', width=2.5), marker=dict(size=7, color='#0f172a', line=dict(width=2, color='#10b981'))))
+        
+        fig_line.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font=dict(color='#cbd5e1', family='Inter'),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
+            hovermode="x unified", height=400, margin=dict(t=10, b=10, l=10, r=10),
+            yaxis=dict(title="Milímetros (mm)", showgrid=True, gridcolor='rgba(255,255,255,0.1)', zeroline=False),
+            xaxis=dict(showgrid=False)
         )
-        
-        st.subheader(f"Tasa de Evaporación Estimada: {e_total:.2f} mm/día")
-        
-        c_graf, c_met = st.columns([1.5, 1])
-        with c_graf:
-            fig_p = go.Figure(data=[go.Pie(
-                labels=['Motor Radiativo (Solar)', 'Motor Aerodinámico (Viento/VPD)'],
-                values=[max(0, t_rad), max(0, t_aero)], hole=.4, marker_colors=['#fbbf24', '#38bdf8']
-            )])
-            fig_p.update_layout(margin=dict(t=10, b=10, l=0, r=0), height=300, showlegend=True, legend=dict(orientation="h", y=-0.1))
-            st.plotly_chart(fig_p, use_container_width=True)
-            
-        with c_met:
-            st.metric(label="Déficit de Presión de Vapor (VPD)", value=f"{vpd_val:.2f} kPa")
-            st.metric(label="Radiación Neta (Rn)", value=f"{rn_val:.2f} MJ/m²/día")
-            st.metric(label="Presión Atmosférica", value=f"{patm:.1f} kPa")
+        st.plotly_chart(fig_line, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.caption("💡 **Balance energético:** Evalúa cómo la radiación solar conduce el mayor porcentaje de evaporación frente al transporte aerodinámico.")
 
-# -----------------------------------------
-# TAB 4: TECNOLOGÍAS Y FOTOS
-# -----------------------------------------
+    with col_exp:
+        st.markdown("""
+        <div class="glass-card border-top-amber" style="margin-bottom: 15px; padding: 15px;">
+            <strong style="color: white; font-size: 1.1rem;">☀️ 1. Motor Radiativo</strong><br>
+            <span style="font-size: 0.85rem; color: #cbd5e1;">El agua libre refleja solo el 8% de la luz solar (Bajo Albedo) y absorbe el <b>92% de la energía radiante</b>, calentando la capa superficial e impulsando más del 68% de las pérdidas (línea gris).</span>
+        </div>
+        <div class="glass-card border-top-sky" style="padding: 15px;">
+            <strong style="color: white; font-size: 1.1rem;">💨 2. Motor Aerodinámico</strong><br>
+            <span style="font-size: 0.85rem; color: #cbd5e1;">Gobernado por el <b>Déficit de Presión de Vapor (VPD)</b>. A 2,350 msnm, la menor presión barométrica y los vientos barren continuamente la cúpula de vapor, acelerando la fuga.</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# TAB 4: CREACIÓN DE VALOR PÚBLICO
+# ---------------------------------------------------------
 with tabs[3]:
-    st.header("Intervenciones Físicas y Tecnológicas")
-    st.markdown("Soluciones de ingeniería implementadas globalmente para reducir el estrés hídrico.")
+    st.markdown('<div class="section-title">Co-Beneficios Estratégicos al Implementar el Piloto</div>', unsafe_allow_html=True)
+    st.write("")
     
-    col_mtx, col_gal = st.columns([1.5, 1])
-    with col_mtx:
-        st.subheader("Matriz Tecnológica de Mitigación")
-        df_tech = pd.DataFrame({
-            "Tecnología": ["☀️ Solares Flotantes (FPV)", "⬡ Módulos Hexagonales", "🌑 Esferas de Sombra", "🧪 Monocapas Químicas"],
-            "Reducción Evap.": ["60% - 70%", "80% - 90%", "80% - 85%", "15% - 30%"],
-            "Costo": ["Alto (Inversión)", "Medio-Alto", "Medio", "Bajo (Operativo)"],
-            "Caso de Éxito": ["Sirindhorn, Tailandia", "Acueductos", "Los Ángeles, EE.UU.", "Represas Agrícolas"]
-        })
-        st.dataframe(df_tech, use_container_width=True, hide_index=True)
-        st.info("💡 **Sinergia Agua-Energía:** Los sistemas FPV no solo reducen la evaporación, sino que el cuerpo de agua enfría los paneles, aumentando su eficiencia fotovoltaica entre un 5% y 10%.")
+    b1, b2 = st.columns(2)
+    b3, b4 = st.columns(2)
     
-    with col_gal:
-        st.subheader("📸 Referencia Visual")
-        try:
-            ruta_fotos = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'Fotos'))
-            if os.path.exists(ruta_fotos) and len(os.listdir(ruta_fotos)) > 0:
-                archivos = [os.path.join(ruta_fotos, f) for f in os.listdir(ruta_fotos) if f.endswith(('.png', '.jpg', '.jpeg'))]
-                if archivos:
-                    st.image(archivos[0], use_container_width=True, caption="Tecnología Flotante")
-            else:
-                st.warning("Agrega fotos a la carpeta 'data/Fotos' en tu repositorio GitHub para visualizar la galería.")
-        except Exception:
-            st.caption("Galería visual no disponible en el despliegue actual.")
+    b1.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px;">
+        <div style="font-size: 2.5rem; color: #38bdf8;">🚰</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">1. Mejora de Calidad del Agua y Control de Algas</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Al sombrear la superficie y bajar la temperatura del agua en ~2.5°C, se inhibe la fotosíntesis de cianobacterias. Esto evita episodios de eutrofización y <b>reduce entre un 20% y 30% el consumo de químicos en la PTAP</b>.</p></div>
+    </div>""", unsafe_allow_html=True)
 
-# -----------------------------------------
-# TAB 5: BASE MAESTRA Y MAPA
-# -----------------------------------------
+    b2.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px;">
+        <div style="font-size: 2.5rem; color: #10b981;">⚡</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">2. Simbiosis Termo-Eléctrica (+10% Rendimiento)</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Los paneles solares en tierra pierden eficiencia al sobrecalentarse. Sobre el espejo de agua frío (2,350 msnm), el enfriamiento convectivo incrementa la producción eléctrica entre un <b>8% y 12% adicional</b>.</p></div>
+    </div>""", unsafe_allow_html=True)
+
+    b3.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px; margin-top: 15px;">
+        <div style="font-size: 2.5rem; color: #fbbf24;">🌲</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">3. Cero Conflicto de Uso de Suelo (Parque Arví)</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Instalar 4 MWp solares en tierra firme exigiría adquirir predios costosos o talar hectáreas. Usar la lámina de un embalse existente genera <b>impacto cero sobre el bosque nativo</b>.</p></div>
+    </div>""", unsafe_allow_html=True)
+
+    b4.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px; margin-top: 15px;">
+        <div style="font-size: 2.5rem; color: #a855f7;">🔄</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">4. Escalabilidad Hacia La Fe y Río Grande II</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Por su escala manejable (~20 ha) y aguas tranquilas, Piedras Blancas es el <b>laboratorio vivo ideal</b> para calibrar anclajes y telemetría antes de escalar a La Fe (145 ha) y Río Grande II (1,100 ha).</p></div>
+    </div>""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# TAB 5: SIMULADOR DEL PILOTO (KPIs REPLICANDO IMAGEN 45)
+# ---------------------------------------------------------
 with tabs[4]:
-    st.header("Base Batimétrica y Explorador Satelital de Antioquia")
-    col_df, col_map = st.columns([1, 1.2])
+    st.markdown('<div class="section-title">Proyecto Piloto: Números para la Toma de Decisiones</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Ajuste los parámetros para la ventana crítica (Dic 2026 - Mar 2027) bajo escenario de El Niño.</div>', unsafe_allow_html=True)
     
-    with col_df:
-        st.markdown("#### 📋 Matriz de Datos Crudos")
-        if not df_embalses.empty:
-            st.dataframe(df_embalses.astype(str), use_container_width=True, hide_index=True, height=350)
-            st.info("💡 **Relación Volumen/Área:** Piedras Blancas y La Fe poseen morfologías expansivas que exponen gran superficie en relación a su volumen útil.")
-        else:
-            st.warning("Conectando a base de datos de Supabase...")
-
-    with col_map:
-        st.markdown("#### 🗺️ Ubicación Espacial")
-        try:
-            import folium
-            import streamlit.components.v1 as components
-            m = folium.Map(location=[6.5, -75.3], zoom_start=9)
-            tile_url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-            folium.TileLayer(tiles=tile_url, attr='Esri', name='Satélite', overlay=False).add_to(m)
-            
-            if not df_embalses.empty:
-                for _, row in df_embalses.iterrows():
-                    nombre = row['Embalse']
-                    if nombre in coords_embalses:
-                        lat, lon = coords_embalses[nombre]
-                        folium.Marker(
-                            [lat, lon], 
-                            tooltip=folium.Tooltip(nombre, permanent=True, direction='right', style="font-size: 11px; background-color: rgba(255,255,255,0.8);")
-                        ).add_to(m)
-            components.html(m._repr_html_(), height=400)
-        except Exception as e:
-            st.warning("Instala 'folium' en tu requirements.txt para habilitar el mapa interactivo.")
-
-# -----------------------------------------
-# TAB 6: SIMULADOR DEL PILOTO FINANCIERO
-# -----------------------------------------
-with tabs[5]:
-    st.header("🎛️ Simulador Ejecutivo: Proyecto Piloto Piedras Blancas")
+    col_ctrl, col_kpi = st.columns([1, 2.5])
     
-    c_s1, c_s2 = st.columns([1.2, 2])
-    with c_s1:
-        st.markdown("#### Parámetros de Intervención")
-        area_ev = st.slider("Espejo de Agua Actual (ha):", 10.0, 28.0, 20.0, 1.0)
-        pct_cb = st.slider("Cobertura del Piloto (%):", 10, 70, 40, 5)
-        tech_sim = st.selectbox("Tecnología a evaluar:", ["⭐ Híbrido (50% FPV + 50% Hexa)", "☀️ 100% Paneles FPV", "⬡ 100% Módulos Hexagonales"])
-        dias_crit = st.slider("Ventana Crítica (días):", 30, 180, 60, 15)
-        consumo = st.slider("Dotación Neta (L/hab-día):", 50, 250, 50, 10)
+    with col_ctrl:
+        st.markdown('<div class="glass-card" style="padding: 20px;">', unsafe_allow_html=True)
+        area_eval = st.slider("Espejo de Agua Actual (ha):", 10.0, 28.0, 20.0, 1.0)
+        pct_cob = st.slider("Cobertura del Piloto (%):", 10, 70, 40, 5)
+        tech_sim = st.selectbox("Tecnología del Piloto:", ["⭐ Híbrido (50% FPV + 50% Hexa)", "☀️ 100% Paneles FPV", "⬡ 100% Módulos Hexagonales"])
+        dias_estiaje = st.slider("Ventana Crítica (días):", 30, 180, 120, 15)
+        consumo_hab = st.slider("Consumo (L/hab-día):", 50, 300, 50, 10)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    with c_s2:
-        area_c = area_ev * (pct_cb / 100.0)
-        ev_base = 4.35 # El Niño consolidado
-        if "Híbrido" in tech_sim: ef_sim, mwp_s, cap_s, pay_s = 0.75, 0.625, 0.36, "3.8 Años"
-        elif "Solares" in tech_sim: ef_sim, mwp_s, cap_s, pay_s = 0.65, 1.25, 0.56, "3.1 Años"
-        else: ef_sim, mwp_s, cap_s, pay_s = 0.85, 0.0, 0.19, "7.5 Años"
+    with col_kpi:
+        # Matemática
+        area_cub = area_eval * (pct_cob / 100.0)
+        ev_dia = 4.35 # El Niño base altiplano
+        if "Híbrido" in tech_sim: eff, mwp, cap, pay = 0.75, 0.625, 0.36, "Payback: 3.8 Años"
+        elif "Solares" in tech_sim: eff, mwp, cap, pay = 0.65, 1.25, 0.56, "Payback: 3.1 Años"
+        else: eff, mwp, cap, pay = 0.85, 0.0, 0.19, "Sólo ahorro de agua"
             
-        ahorro_m3_dia = (ev_base * area_ev * 10) * (pct_cb / 100.0) * ef_sim
-        vol_salvado = ahorro_m3_dia * dias_crit
-        habs = (ahorro_m3_dia * 60) / ((consumo / 1000.0) * dias_crit) # Lógica dinámica
+        perdida_base = ev_dia * area_eval * 10
+        ahorro_diario = perdida_base * (pct_cob / 100.0) * eff
+        agua_salv_total = ahorro_diario * dias_estiaje
+        piscinas = agua_salv_total / 2500.0
         
-        st.markdown("#### Impacto Físico y Financiero")
+        # Personas garantizadas (Bolson base / consumo periodo)
+        hab_abastecidos = (ahorro_diario * 60) / ((consumo_hab / 1000.0) * dias_estiaje)
+        mwp_tot = area_cub * mwp
+        gwh_ano = mwp_tot * 1.35
+        cap_tot = area_cub * cap
+
+        # Renderizado de Tarjetas Gigantes KPI (Exactas al diseño HTML proporcionado)
         k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Agua Salvada", f"{vol_salvado:,.0f} m³", f"En {dias_crit} días")
-        k2.metric("Abastecimiento", f"{habs:,.0f} Hab", f"Continuo a {consumo} L")
-        k3.metric("Generación", f"{area_c*mwp_s:.1f} MWp", "Ley 1715" if mwp_s>0 else "Pasivo")
-        k4.metric("CAPEX Est.", f"${area_c*cap_s:.2f}M USD", f"ROI: {pay_s}", delta_color="inverse")
+        k1.markdown(f'''<div class="kpi-box"><div class="kpi-title">AGUA SALVADA ({dias_estiaje} DÍAS)</div>
+            <div class="kpi-val" style="color: #38bdf8;">{agua_salv_total:,.0f} <span style="font-size:1.5rem">m³</span></div>
+            <div class="kpi-desc">Equivalente a <b>{piscinas:.1f} Piscinas Olímpicas</b> retenidas en el vaso.</div>
+            <div class="kpi-foot" style="color: #38bdf8;">Anualizado: ~{(ahorro_diario*365):,.0f} m³/año</div></div>''', unsafe_allow_html=True)
+            
+        k2.markdown(f'''<div class="kpi-box"><div class="kpi-title">SEGURIDAD ABASTECIMIENTO</div>
+            <div class="kpi-val" style="color: #34d399;">{hab_abastecidos:,.0f} <span style="font-size:1.5rem">Hab</span></div>
+            <div class="kpi-desc">Población con suministro garantizado a {consumo_hab} L/día en estiaje.</div>
+            <div class="kpi-foot" style="color: #34d399;">Evita carrotanques</div></div>''', unsafe_allow_html=True)
+            
+        txt_ener = f"{mwp_tot:.1f} MWp" if mwp_tot > 0 else "0.0 MWp"
+        txt_ener_sub = f"Genera {gwh_ano:.1f} GWh/año para autoconsumo EPM." if mwp_tot > 0 else "Barrera mecánica pasiva."
+        k3.markdown(f'''<div class="kpi-box"><div class="kpi-title">GENERACIÓN (FPV)</div>
+            <div class="kpi-val" style="color: #fbbf24;">{txt_ener}</div>
+            <div class="kpi-desc">{txt_ener_sub}</div>
+            <div class="kpi-foot" style="color: #fbbf24;">Sinergia energética</div></div>''', unsafe_allow_html=True)
+            
+        k4.markdown(f'''<div class="kpi-box"><div class="kpi-title">INVERSIÓN (CAPEX NETO)</div>
+            <div class="kpi-val" style="color: white;">${cap_tot:.1f}M <span style="font-size:1.3rem">USD</span></div>
+            <div class="kpi-desc">CAPEX neto asumiendo Ley 1715.</div>
+            <div class="kpi-foot" style="color: #fb7185;">{pay}</div></div>''', unsafe_allow_html=True)
 
-# -----------------------------------------
-# TAB 7: TELEMETRÍA XM
-# -----------------------------------------
-with tabs[6]:
-    st.header("📡 Telemetría Operativa")
-    st.markdown("Piedras Blancas y La Fe son embalses de uso exclusivo de acueducto y no reportan telemetría de energía a la base de datos de XM. Para conectar otros embalses de generación, se utiliza la API nativa de `pydataxm`.")
-    if st.button("Probar Conexión PyDataXM (Embalse Guatapé)"):
-        try:
-            import datetime as dt
-            from pydataxm import *
-            api = pydataxm.ReadDB()
-            df_cat = api.get_collections()
-            if not df_cat.empty:
-                st.success("✅ Conexión establecida con el servidor nacional de XM con éxito.")
-        except Exception as e:
-            st.error("Instala 'pydataxm' en tu archivo requirements.txt para habilitar esta función.")
-
-# -----------------------------------------
-# TAB 8: RUTA CRÍTICA
-# -----------------------------------------
-with tabs[7]:
-    st.header("🚀 Ruta Crítica de Acción Proactiva")
-    dias_fin_ano = (datetime(2026, 12, 31) - datetime.now()).days
-    st.error(f"⚠️ **Sentido de Urgencia:** Quedan ~{max(0, dias_fin_ano)} días de lluvias antes del estiaje seco de fin de año. Si esperamos a febrero, el agua se habrá evaporado.")
+# ---------------------------------------------------------
+# TAB 6: RUTA CRÍTICA (REPLICANDO IMAGEN 43)
+# ---------------------------------------------------------
+with tabs[5]:
+    st.markdown('<div class="section-title">Ruta Crítica de Acción: Octubre 2026 – Primer Trimestre 2027</div>', unsafe_allow_html=True)
+    st.write("")
     
-    rt1, rt2, rt3, rt4 = st.columns(4)
-    rt1.info("**PASO 1: Oct 2026**\n* Aprobación express (8 ha).\n* Regla de retención máxima.\n* Compra de módulos rápidos.")
-    rt2.success("**PASO 2: Nov 2026**\n* Sellado temprano del espejo de agua al llegar a cota máxima.\n* Barreras de viento (Booms).")
-    rt3.warning("**PASO 3: Dic 2026**\n* Defensa activa ante la alta radiación y vientos alisios.\n* Montaje FPV e interconexión.")
-    rt4.error("**PASO 4: 1T 2027**\n* Superación del pico de El Niño sin racionamientos en Oriente.\n* Modelo listo para La Fe.")
-
-st.markdown("---")
-st.caption("Plataforma de Soporte a la Decisión Socio-Hidroclimática • Fondo de Agua CuencaVerde, EPM y Alcaldía de Medellín • 2026")
+    st.markdown("""
+    <div style="background: rgba(127, 29, 29, 0.2); border: 1px solid rgba(248, 113, 113, 0.4); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px;">
+        <span style="color: #fb7185; font-weight: bold;">⚠️ ¿Por qué decidir HOY en Octubre de 2026?</span> <span style="color: #f8fafc;">No se puede tapar un embalse cuando ya se secó en febrero. Debemos aprovechar los <b>días lluviosos de octubre y noviembre</b> para llenar el vaso al 100%, e instalar la cobertura para que actúe como "tapa hermética" desde el 1 de diciembre.</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    r1, r2, r3, r4 = st.columns(4)
+    r1.markdown("""<div class="glass-card">
+        <span style="color:#38bdf8; font-size:0.75rem; font-weight:700;">PASO 1 • OCTUBRE 2026</span>
+        <h3 style="color:white; font-size:1.1rem; margin:10px 0;">Aprobación Express y Cosecha</h3>
+        <ul style="color:#cbd5e1; font-size:0.85rem; padding-left:15px;">
+            <li>Aprobación ejecutiva del Piloto (8 ha).</li>
+            <li>Regla de retención máxima de lluvias de octubre.</li>
+            <li>Compra de módulos rápidos (Fase 1A).</li>
+        </ul>
+        <div style="margin-top:20px; font-size:0.75rem; font-weight:700; color:#38bdf8;">Hito: Compra lista al 31 Oct.</div>
+    </div>""", unsafe_allow_html=True)
+    
+    r2.markdown("""<div class="glass-card">
+        <span style="color:#10b981; font-size:0.75rem; font-weight:700;">PASO 2 • NOVIEMBRE 2026</span>
+        <h3 style="color:white; font-size:1.1rem; margin:10px 0;">Sellado Temprano</h3>
+        <ul style="color:#cbd5e1; font-size:0.85rem; padding-left:15px;">
+            <li>Captura de lluvias hasta cota máxima.</li>
+            <li>Instalación de barreras (booms) y despliegue modular.</li>
+            <li>Encendido de boyas de telemetría.</li>
+        </ul>
+        <div style="margin-top:20px; font-size:0.75rem; font-weight:700; color:#10b981;">Hito: Sellado al 30 de Nov.</div>
+    </div>""", unsafe_allow_html=True)
+    
+    r3.markdown("""<div class="glass-card">
+        <span style="color:#fbbf24; font-size:0.75rem; font-weight:700;">PASO 3 • DICIEMBRE 2026</span>
+        <h3 style="color:white; font-size:1.1rem; margin:10px 0;">Defensa Activa en Verano</h3>
+        <ul style="color:#cbd5e1; font-size:0.85rem; padding-left:15px;">
+            <li>Llegada de radiación y vientos alisios con escudo activo.</li>
+            <li>Ahorro inmediato de ~260 m³/día.</li>
+            <li>Montaje e interconexión de Paneles Solares Flotantes.</li>
+        </ul>
+        <div style="margin-top:20px; font-size:0.75rem; font-weight:700; color:#fbbf24;">Hito: Mitigación pico Dic.</div>
+    </div>""", unsafe_allow_html=True)
+    
+    r4.markdown("""<div class="glass-card">
+        <span style="color:#a855f7; font-size:0.75rem; font-weight:700;">PASO 4 • ENE - MAR 2027</span>
+        <h3 style="color:white; font-size:1.1rem; margin:10px 0;">Superación y Escalado</h3>
+        <ul style="color:#cbd5e1; font-size:0.85rem; padding-left:15px;">
+            <li>Preservación de >31,000 m³ en el trimestre más seco.</li>
+            <li>Agua cruda sin proliferación de algas.</li>
+            <li>Expediente técnico validado para La Fe.</li>
+        </ul>
+        <div style="margin-top:20px; font-size:0.75rem; font-weight:700; color:#a855f7;">Hito: Modelo listo para escalar.</div>
+    </div>""", unsafe_allow_html=True)
