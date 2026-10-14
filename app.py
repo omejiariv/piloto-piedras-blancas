@@ -73,7 +73,7 @@ LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/publ
 # ==========================================
 # 2. CABEZOTE EJECUTIVO
 # ==========================================
-col_l1, col_l2, col_l3, col_spc = st.columns([1, 1, 1, 20])
+col_l1, col_l2, col_l3, col_spc = st.columns([1, 1, 1, 10])
 with col_l1: st.image(LOGO_CUENCA, use_container_width=True)
 with col_l2: st.image(LOGO_EPM, use_container_width=True)
 with col_l3: st.image(LOGO_ALCALDIA, use_container_width=True)
