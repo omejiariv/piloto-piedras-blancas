@@ -52,6 +52,10 @@ st.set_page_config(page_title="Piloto Piedras Blancas", page_icon="💧", layout
 
 st.markdown("""
 <style>
+    /* Reducir el espacio superior por defecto de la página en Streamlit */
+    .block-container {
+        padding-top: 1.5rem;
+    }
     .metric-card {
         background-color: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 10px;
     }
@@ -75,7 +79,7 @@ with col_l2: st.image(LOGO_EPM, use_container_width=True)
 with col_l3: st.image(LOGO_ALCALDIA, use_container_width=True)
 
 st.markdown("""
-<div style="background: linear-gradient(90deg, #0f172a, #1e293b); padding: 25px; border-radius: 15px; border-left: 5px solid #38bdf8; margin-top: 10px; margin-bottom: 25px;">
+<div style="background: linear-gradient(90deg, #0f172a, #1e293b); padding: 25px; border-radius: 15px; border-left: 5px solid #38bdf8; margin-top: 0px; margin-bottom: 25px;">
     <h4 style="color: #38bdf8; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">🛡️ Proyecto Piloto de Adaptación Hidroclimática Inmediata</h4>
     <h1 style="color: white; margin: 5px 0 10px 0; font-size: 2.5rem;">Blindaje Evaporativo del Embalse Piedras Blancas ante El Niño (2026-2027)</h1>
     <p style="color: #cbd5e1; font-size: 1.1rem; margin: 0;">Estrategia proactiva para cosechar las lluvias de <b>octubre y noviembre de 2026</b> y sellar la lámina de agua mediante tecnologías flotantes, mitigando el riesgo de desabastecimiento en <b>diciembre de 2026 y el 1T de 2027</b>.</p>
@@ -87,8 +91,6 @@ c1.markdown('<div class="metric-card"><div class="metric-title">Sistema Objetivo
 c2.markdown('<div class="metric-card"><div class="metric-title">Capacidad de Reserva</div><div class="metric-value" style="color: #fbbf24;">0.50 Millones de m³</div><div class="metric-sub">Acueducto EPM (Oriente Medellín)</div></div>', unsafe_allow_html=True)
 c3.markdown('<div class="metric-card"><div class="metric-title">Variable de Intervención</div><div class="metric-value" style="color: #34d399;">Control Evaporativo</div><div class="metric-sub">Impacto inmediato (50% - 85%)</div></div>', unsafe_allow_html=True)
 c4.markdown('<div class="metric-card"><div class="metric-title">Ventana de Ejecución</div><div class="metric-value" style="color: #fb7185;">Oct - Nov 2026</div><div class="metric-sub">Previo al estiaje Dic 26 - Mar 27</div></div>', unsafe_allow_html=True)
-
-st.write("") # Espaciador
 
 # ==========================================
 # 3. NAVEGACIÓN EN PESTAÑAS (TABS)
