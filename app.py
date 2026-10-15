@@ -5,6 +5,7 @@ import plotly.express as px
 import math
 import requests
 import io
+import os
 from datetime import datetime
 
 # ==========================================
@@ -61,9 +62,7 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif !important;
-    }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     
     .block-container {
         padding-top: 1.5rem !important; 
@@ -101,13 +100,13 @@ st.markdown("""
     .border-top-emerald { border-top: 4px solid #10b981; }
     .border-top-amber { border-top: 4px solid #f59e0b; }
     .border-top-purple { border-top: 4px solid #a855f7; }
+    .border-top-rose { border-top: 4px solid #f43f5e; }
     
     .section-title { font-size: 1.8rem; font-weight: 700; color: #0f172a; margin-bottom: 5px; }
     .section-subtitle { font-size: 1rem; color: #475569; margin-bottom: 20px; }
 </style>
 """, unsafe_allow_html=True)
 
-# URLs de Logos
 LOGO_CUENCA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/CuencaVerdeLogo_V1.JPG"
 LOGO_EPM = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_epm.png"
 LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/public/imagenes/logo_distritoMedellin.png"
@@ -115,7 +114,7 @@ LOGO_ALCALDIA = "https://ldunpssoxvifemoyeuac.supabase.co/storage/v1/object/publ
 # ==========================================
 # 2. CABEZOTE EJECUTIVO
 # ==========================================
-col_l1, col_l2, col_l3, col_spc = st.columns([0.4, 0.4, 0.4, 2])
+col_l1, col_l2, col_l3, col_spc = st.columns([1, 1, 1, 15])
 with col_l1: st.image(LOGO_CUENCA, use_container_width=True)
 with col_l2: st.image(LOGO_EPM, use_container_width=True)
 with col_l3: st.image(LOGO_ALCALDIA, use_container_width=True)
@@ -137,15 +136,16 @@ c4.markdown('<div class="kpi-box"><div class="kpi-title">Ventana de Ejecución</
 st.write("") 
 
 # ==========================================
-# 3. NAVEGACIÓN EN PESTAÑAS (TABS)
+# 3. NAVEGACIÓN EN PESTAÑAS (7 TABS AHORA)
 # ==========================================
 tabs = st.tabs([
     "🌍 1. Diagnóstico", 
     "🔄 2. Gobernanza", 
     "🔬 3. Física Evaporativa", 
-    "💡 4. Creación de Valor", 
-    "🎛️ 5. Simulador Piloto", 
-    "🚀 6. Ruta Crítica"
+    "🛠️ 4. Tecnologías",
+    "💡 5. Creación de Valor", 
+    "🎛️ 6. Simulador Piloto", 
+    "🚀 7. Ruta Crítica"
 ])
 
 # ---------------------------------------------------------
@@ -256,14 +256,177 @@ with tabs[2]:
         """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# TAB 4: CREACIÓN DE VALOR PÚBLICO
+# TAB 4: TECNOLOGÍAS DE MITIGACIÓN (NUEVA PESTAÑA)
 # ---------------------------------------------------------
 with tabs[3]:
+    st.markdown('<div class="section-title">Tecnologías de Control y Viabilidad Financiera</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subtitle">Desde barreras físicas tradicionales hasta infraestructuras de generación eléctrica que protegen el recurso hídrico.</div>', unsafe_allow_html=True)
+    
+    st.markdown("### 1. Espectro de Tecnologías Base")
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.subheader("Cubiertas y Mantas Físicas")
+        st.markdown("""
+        Método altamente eficaz a pequeña y mediana escala al bloquear el contacto directo agua-aire.
+        * **Mantas Térmicas (Burbujas):** Reducen la evaporación casi por completo y retienen el calor nocturno.
+        * **Cubiertas Automáticas (Lamas):** Rígidas (PVC/policarbonato), duraderas y brindan seguridad física.
+        * **Cubiertas Solares:** Filtran rayos solares para reducir la brecha térmica entre el agua y el ambiente.
+        """)
+        
+        st.subheader("Cobertores Líquidos (Mantas Químicas)")
+        st.markdown("""
+        Productos biodegradables que crean una **capa monomolecular invisible**. Frenan la salida del vapor sin alterar la potabilidad. A pequeña escala son económicos, pero a gran escala requieren dosificación "upwind" constante, perdiendo viabilidad.
+        """)
+    with col_t2:
+        st.subheader("Sistemas de Esferas Flotantes (Barrier Balls)")
+        st.markdown("""
+        Esferas de plástico con protección UV que cubren la superficie bloqueando más del 90% de la interfaz agua-aire. Minimizan la radiación directa, reducen el crecimiento de algas y se apartan fácilmente ante intrusiones físicas.
+        """)
+        
+        st.subheader("⬡ Módulos Hexagonales Autoconectables")
+        st.markdown("""
+        Alternativa mecánica modular (HexaCovers). Paneles de plástico que flotan y se autoensamblan geométricamente. Se adaptan dinámicamente al nivel del agua; si el embalse baja, se apilan en las orillas sin sufrir daños.
+        """)
+
+    st.markdown("---")
+    st.markdown("### 2. Análisis Financiero y Evaluación Comparativa Dinámica")
+    st.markdown("Ajuste el tamaño del embalse y seleccione una tecnología para proyectar su viabilidad a escala industrial (Cálculo basado en una cobertura del 40% de la superficie).")
+
+    col_area, col_tech = st.columns([1, 2])
+    with col_area:
+        area_eval_ha = st.number_input("📐 Área total del embalse a evaluar (Hectáreas):", min_value=1.0, value=20.0, step=5.0)
+    with col_tech:
+        tech_eval = st.selectbox("🔍 Seleccionar Tecnología a Evaluar:", [
+            "☀️ Paneles Solares Flotantes (Floatovoltaics - FPV)",
+            "⬡ Módulos Hexagonales Autoconectables",
+            "🌑 Sistemas de Esferas Flotantes (Barrier Balls)",
+            "🛡️ Cubiertas y Mantas Físicas (Burbujas, Lamas, Solares)"
+        ])
+
+    vista_fin_sin = st.radio("Seleccione la vista de análisis:", ["💰 Modelo Financiero y Viabilidad", "📊 Síntesis Comparativa Global"], horizontal=True, label_visibility="collapsed")
+
+    if vista_fin_sin == "💰 Modelo Financiero y Viabilidad":
+        col_info, col_galeria = st.columns([1.6, 1.4])
+        
+        def obtener_galeria(prefijos):
+            ruta_base = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'Fotos'))
+            imgs = []
+            if os.path.exists(ruta_base):
+                for f in os.listdir(ruta_base):
+                    if any(p.lower() in f.lower() for p in prefijos):
+                        imgs.append(os.path.join(ruta_base, f))
+            return sorted(imgs)
+            
+        with col_info:
+            area_cubierta_m2 = area_eval_ha * 10000 * 0.40
+            factor_escala = area_eval_ha / 20.0
+            mwp_instalado = 10.0 * factor_escala
+            
+            if "Paneles Solares" in tech_eval:
+                st.success("**Tecnología Líder en Costo-Efectividad a Gran Escala:** Genera sinergia Agua-Energía.")
+                st.markdown(f"**Desglose Inversión:** El CAPEX solar flotante oscila entre **$0.55 y $0.80 USD por vatio**. Cubrir el 40% del embalse ({area_cubierta_m2:,.0f} m²) permite instalar unos **{mwp_instalado:,.1f} MWp**. Inversión bruta: **${(6.70 * factor_escala):,.2f}M a ${(8.05 * factor_escala):,.2f}M USD**.")
+                df_capex = pd.DataFrame({
+                    "Componente": ["Módulos Fotovoltaicos", "Flotadores HDPE y Pasarelas", "Inversores y Equipos", "Anclaje y Amarre", "BOP Eléctrico", "Ingeniería y Permisos"],
+                    "Participación": ["35%", "22%", "16%", "12%", "8%", "7%"]
+                })
+                st.table(df_capex)
+                
+                st.markdown(f"""
+                **Beneficios Fiscales (Leyes 1715 y 2099):** El desembolso se reduce a **${(4.5 * factor_escala):,.2f}M - ${(5.5 * factor_escala):,.2f}M USD**:
+                * **Exclusión IVA (19%) y Exención Arancelaria** para equipos importados.
+                * **Deducción de Renta:** Hasta el 50% de la inversión en 15 años.
+                * **Depreciación Acelerada:** Amortización en 3 a 5 años.
+                
+                **Retorno (ROI):** Al generar {(13.5 * factor_escala):,.1f} GWh/año para autoconsumo en bombeo, desplazando tarifas de EPM ($700-$900 COP/kWh):
+                * **Ahorro Bruto Anual:** ${(2.5 * factor_escala):,.2f} - ${(3.0 * factor_escala):,.2f} Millones USD.
+                * **Payback:** **2.5 a 4 años**. Vida útil restante (20+ años) como flujo de caja positivo.
+                """)
+
+            elif "Hexagonales" in tech_eval:
+                st.info("**Alternativa Mecánica de Alta Durabilidad:** Ideal si la interconexión eléctrica no es viable.")
+                st.markdown(f"""
+                * **CAPEX (Inversión Inicial):** Moderada-Alta. Cubrir {area_cubierta_m2:,.0f} m² (40% de {area_eval_ha} Ha) cuesta aprox. **${(1.2 * factor_escala):,.2f}M - ${(2.0 * factor_escala):,.2f}M USD** ($15 - $25 USD/m²).
+                * **OPEX (Gasto Recurrente):** Casi nulo. No requieren limpieza constante ni consumen energía.
+                * **Retorno Financiero:** Indirecto. Se amortiza en 7 a 10 años basándose exclusivamente en el valor del agua cruda salvada.
+                * **Viabilidad Técnica:** Excelente en topografías complejas; soportan fluctuaciones severas de cota sin tensión estructural.
+                """)
+
+            elif "Esferas" in tech_eval:
+                st.warning("**Control Dinámico:** Famosas por su uso en el Embalse de Los Ángeles.")
+                st.markdown(f"""
+                * **CAPEX (Inversión Inicial):** Moderada. Aprox. **${(800 * factor_escala):,.0f}k - ${(1.2 * factor_escala):,.2f}M USD** para {area_cubierta_m2:,.0f} m² ($10 - $15 USD/m²).
+                * **OPEX (Gasto Recurrente):** Bajo, pero superior a los hexágonos. Las esferas pueden acumular biopelículas o ser expulsadas a las orillas.
+                * **Retorno Financiero:** 5 a 8 años por retención hídrica. 
+                * **Limitación en Antioquia:** En cañones con efecto Venturi, las esferas tienden a apilarse en un solo extremo del embalse, perdiendo efectividad de cobertura.
+                """)
+
+            elif "Mantas" in tech_eval:
+                st.error("**Descarte a Gran Escala:** Eficaces en piscinas y acueductos veredales, inviables en embalses.")
+                st.markdown(f"""
+                * **Mantas de Burbujas / Solares:** Extremadamente vulnerables al desgarro por fatiga mecánica. Vida útil reducida a 1-2 años a la intemperie total.
+                * **Cubiertas de Lamas:** Costo prohibitivo a escala industrial (supera los $100 USD/m²).
+                * **Veredicto:** Su uso debe restringirse a tanques de almacenamiento, plantas de tratamiento (PTAP) o reservorios menores a 1 Hectárea.
+                """)
+
+        with col_galeria:
+            st.markdown("#### 📸 Explorador Visual y Casos de Estudio")
+            prefijos_busqueda = []
+            if "Paneles Solares" in tech_eval:
+                prefijos_busqueda = ["paneles_solares", "floating_solar"]
+            elif "Hexagonales" in tech_eval:
+                prefijos_busqueda = ["hexa-cover"]
+            elif "Esferas" in tech_eval:
+                prefijos_busqueda = ["esferas_flotantes"]
+            elif "Mantas" in tech_eval:
+                prefijos_busqueda = ["mantas_flotantes"]
+            
+            galeria = obtener_galeria(prefijos_busqueda)
+            
+            if galeria:
+                if len(galeria) > 1:
+                    idx = st.slider("Desliza para ver más fotografías:", 1, len(galeria), 1) - 1
+                    st.image(galeria[idx], use_container_width=True, caption=f"Fotografía {idx+1} de {len(galeria)}")
+                else:
+                    st.image(galeria[0], use_container_width=True, caption="Fotografía de referencia")
+            else:
+                st.info("💡 Agrega imágenes con los prefijos correspondientes en la carpeta 'data/Fotos/' para visualizarlas aquí.")
+            
+            st.markdown("---")
+            st.markdown("#### 🎬 Referencias Documentales")
+            if "Esferas" in tech_eval:
+                st.video("https://www.youtube.com/watch?v=x7GWPTZBJd0")
+            elif "Hexagonales" in tech_eval:
+                st.video("https://www.youtube.com/watch?v=37mrElHtc8E")
+            elif "Paneles Solares" in tech_eval:
+                st.info("📺 **Ver Documental:** [El Gran Proyecto Solar Hídrico](https://www.facebook.com/unboxfactory/videos/a-major-river-system-supplying-water-to-around-40-million-americans-is-now-testi/1475959924012973/)")
+            else:
+                st.caption("Selecciona 'Paneles Solares' o 'Sistemas de Esferas' para desbloquear videos documentales.")
+
+    else:
+        st.markdown("#### Matriz de Decisión: Costo-Efectividad para Embalses (Escala > 10 Hectáreas)")
+        df_sintesis = pd.DataFrame({
+            "Tecnología": [
+                "Solares Flotantes (FPV)", "Módulos Hexagonales", "Barrier Balls (Esferas)", 
+                "Mantas Físicas (Burbujas/Lamas)", "Cobertor Líquido (Químico)"
+            ],
+            "Inversión Inicial (CAPEX)": ["Muy Alta", "Moderada - Alta", "Moderada", "Alta (Lamas) / Baja (Burbujas)", "Muy Baja"],
+            "Costo Operativo (OPEX)": ["Bajo (Mantenimiento eléctrico)", "Casi Nulo", "Bajo", "Alto (Reemplazos frecuentes)", "Muy Alto (Dosis perpetuas)"],
+            "Retorno de Inversión": ["2.5 - 4 Años (Ahorro Agua, Genera Energía)", "7 - 10 Años (Ahorra Agua, Mejora Calidad)", "5 - 8 Años (Ahorra Agua)", "Inviable a gran escala", "No se amortiza (Gasto fijo)"],
+            "Viabilidad en Antioquia": ["⭐⭐⭐⭐⭐ (Excelente)", "⭐⭐⭐⭐ (Muy Buena)", "⭐⭐ (Riesgo por vientos)", "⭐ (Útil en áreas pequeñas o crisis)", "⭐ (Áreas pequeñas o crisis)"]
+        })
+        st.dataframe(df_sintesis, use_container_width=True, hide_index=True)
+        st.caption("Nota: La viabilidad en Antioquia considera la topografía de cañones (vientos fuertes) y la necesidad de mantener la potabilidad del agua libre de aditivos constantes.")
+
+# ---------------------------------------------------------
+# TAB 5: CREACIÓN DE VALOR PÚBLICO
+# ---------------------------------------------------------
+with tabs[4]:
     st.markdown('<div class="section-title">Co-Beneficios Estratégicos al Implementar el Piloto</div>', unsafe_allow_html=True)
     st.write("")
     
     b1, b2 = st.columns(2)
     b3, b4 = st.columns(2)
+    b5, b6 = st.columns(2)
     
     b1.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px;">
         <div style="font-size: 2.5rem; color: #38bdf8;">🚰</div>
@@ -289,17 +452,28 @@ with tabs[3]:
         <p style="color:#cbd5e1; font-size:0.9rem;">Por su escala manejable (~20 ha) y aguas tranquilas, Piedras Blancas es el <b>laboratorio vivo ideal</b> para calibrar anclajes y telemetría antes de escalar a La Fe (145 ha) y Río Grande II (1,100 ha).</p></div>
     </div>""", unsafe_allow_html=True)
 
+    b5.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px; margin-top: 15px;">
+        <div style="font-size: 2.5rem; color: #f43f5e;">📜</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">5. Beneficios Fiscales (Leyes 1715 y 2099)</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Bajo estas leyes, el desembolso se reduce a <b>4.50M - 5.50M USD</b> mediante: Exclusión de IVA (19%) y exención arancelaria, Deducción de Renta (50% en 15 años) y Depreciación Acelerada (3 a 5 años).</p></div>
+    </div>""", unsafe_allow_html=True)
+
+    b6.markdown("""<div class="glass-card" style="display:flex; align-items:flex-start; gap: 15px; margin-top: 15px;">
+        <div style="font-size: 2.5rem; color: #10b981;">📈</div>
+        <div><h3 style="color:white; margin:0 0 10px 0; font-size:1.2rem;">6. Retorno Financiero (ROI)</h3>
+        <p style="color:#cbd5e1; font-size:0.9rem;">Al generar 13.5 GWh/año para autoconsumo, desplazando tarifas de EPM (700-900 COP/kWh), se logra un <b>Ahorro Bruto Anual de 2.50-3.00 Millones USD</b>. Payback de 2.5 a 4 años con más de 20 años de flujo positivo.</p></div>
+    </div>""", unsafe_allow_html=True)
+
 # ---------------------------------------------------------
-# TAB 5: SIMULADOR DEL PILOTO (SIN CAJAS HTML VACÍAS)
+# TAB 6: SIMULADOR DEL PILOTO
 # ---------------------------------------------------------
-with tabs[4]:
+with tabs[5]:
     st.markdown('<div class="section-title">Proyecto Piloto: Números para la Toma de Decisiones</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subtitle">Ajuste los parámetros para la ventana crítica (Dic 2026 - Mar 2027) bajo escenario de El Niño.</div>', unsafe_allow_html=True)
     
     col_ctrl, col_kpi = st.columns([1, 2.5])
     
     with col_ctrl:
-        # Se elimina el wrapper HTML para que los sliders de Streamlit se rendericen correctamente
         st.markdown('<h4 style="color: #0f172a; margin-bottom: 15px;">⚙️ Parámetros de Simulación</h4>', unsafe_allow_html=True)
         area_eval = st.slider("Espejo de Agua Actual (ha):", 10.0, 28.0, 20.0, 1.0)
         pct_cob = st.slider("Cobertura del Piloto (%):", 10, 70, 40, 5)
@@ -308,9 +482,8 @@ with tabs[4]:
         consumo_hab = st.slider("Consumo (L/hab-día):", 50, 300, 50, 10)
 
     with col_kpi:
-        # Matemática del simulador
         area_cub = area_eval * (pct_cob / 100.0)
-        ev_dia = 4.35 # El Niño base altiplano
+        ev_dia = 4.35 
         if "Híbrido" in tech_sim: eff, mwp, cap, pay = 0.75, 0.625, 0.36, "Payback: 3.8 Años"
         elif "Solares" in tech_sim: eff, mwp, cap, pay = 0.65, 1.25, 0.56, "Payback: 3.1 Años"
         else: eff, mwp, cap, pay = 0.85, 0.0, 0.19, "Sólo ahorro de agua"
@@ -320,13 +493,11 @@ with tabs[4]:
         agua_salv_total = ahorro_diario * dias_estiaje
         piscinas = agua_salv_total / 2500.0
         
-        # Personas garantizadas (Bolson base / consumo periodo)
         hab_abastecidos = (ahorro_diario * 60) / ((consumo_hab / 1000.0) * dias_estiaje)
         mwp_tot = area_cub * mwp
         gwh_ano = mwp_tot * 1.35
         cap_tot = area_cub * cap
 
-        # Tarjetas KPI Estilo Ejecutivo
         k1, k2, k3, k4 = st.columns(4)
         k1.markdown(f'''<div class="kpi-box border-top-sky"><div class="kpi-title">AGUA SALVADA ({dias_estiaje} DÍAS)</div>
             <div class="kpi-val" style="color: #38bdf8;">{agua_salv_total:,.0f} <span style="font-size:1.5rem">m³</span></div>
@@ -351,12 +522,11 @@ with tabs[4]:
             <div class="kpi-foot" style="color: #fb7185;">{pay}</div></div>''', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# TAB 6: RUTA CRÍTICA
+# TAB 7: RUTA CRÍTICA
 # ---------------------------------------------------------
-with tabs[5]:
-    st.markdown('<div class="section-title">Ruta Crítica de Acción: Octubre 2026 – Primer Trimestre 2027</div>', unsafe_allow_html=True)
-    
+with tabs[6]:
     st.markdown("""
+    <div class="section-title" style="margin-bottom: 15px;">Ruta Crítica de Acción: Octubre 2026 – Primer Trimestre 2027</div>
     <div style="background: rgba(127, 29, 29, 0.1); border: 1px solid rgba(248, 113, 113, 0.4); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
         <span style="color: #ef4444; font-weight: bold; font-size: 1.1rem;">⚠️ ¿Por qué decidir HOY en Octubre de 2026?</span> <span style="color: #334155; font-size: 1.05rem;"><br>No se puede tapar un embalse cuando ya se secó en febrero. Debemos aprovechar los <b>días lluviosos de octubre y noviembre</b> para llenar el vaso al 100%, e instalar la cobertura para que actúe como "tapa hermética" desde el 1 de diciembre.</span>
     </div>
