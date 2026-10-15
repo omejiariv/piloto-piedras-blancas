@@ -355,7 +355,6 @@ with tabs[4]:
 # ---------------------------------------------------------
 with tabs[5]:
     st.markdown('<div class="section-title">Ruta Crítica de Acción: Octubre 2026 – Primer Trimestre 2027</div>', unsafe_allow_html=True)
-    st.write("")
     
     st.markdown("""
     <div style="background: rgba(127, 29, 29, 0.1); border: 1px solid rgba(248, 113, 113, 0.4); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
