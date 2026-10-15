@@ -417,6 +417,27 @@ with tabs[3]:
         st.dataframe(df_sintesis, use_container_width=True, hide_index=True)
         st.caption("Nota: La viabilidad en Antioquia considera la topografía de cañones (vientos fuertes) y la necesidad de mantener la potabilidad del agua libre de aditivos constantes.")
 
+    with st.expander("⚖️ Marco Normativo: Ley 1715 de 2014 y Ley 2099 de 2021", expanded=False):
+        st.markdown("""
+        En Colombia, la Ley 1715 de 2014 y la Ley 2099 de 2021 forman el marco normativo principal para promover la transición energética, la integración de Fuentes No Convencionales de Energía Renovable (FCNER) y el uso eficiente de la energía.
+        
+        **Ley 1715 de 2014**
+        * **Objeto:** Regula la integración de las energías renovables no convencionales (como solar, eólica, biomasa, entre otras) al Sistema Energético Nacional.
+        * **Incentivos creados:**
+          * Deducción de renta por inversiones en proyectos de fuentes renovables.
+          * Exclusión del Impuesto al Valor Agregado (IVA) para equipos y servicios destinados a estos proyectos.
+          * Exención de aranceles de importación para maquinaria y equipos.
+          * Depreciación acelerada de los activos (con un límite inicial de hasta el 20% anual).
+        
+        **Ley 2099 de 2021 (Modificatoria y de Transición Energética)**
+        * **Objeto:** Moderniza la legislación anterior, impulsa la reactivación económica y dicta normas para la transición y dinamización del mercado energético.
+        * **Principales novedades y actualizaciones:**
+          * **Inclusión de nuevas fuentes:** Incorpora el hidrógeno verde y azul dentro de los proyectos elegibles para los beneficios.
+          * **Depreciación acelerada ampliada:** Eleva la tasa máxima anual de depreciación de los activos de generación del 20% al 33%, permitiendo una deducción más rápida en la declaración de renta.
+          * **Unificación de trámites:** Centraliza ante la Unidad de Planeación Minero Energética (UPME) la validación y calificación de los proyectos para acceder a los beneficios tributarios (eliminando la antigua intervención dual con la ANLA).
+          * **Deducción en renta:** Ratifica y ajusta el beneficio de deducir hasta el 50% del valor total de la inversión realizada en la producción de energía con FCNER.
+        """)
+
 # ---------------------------------------------------------
 # TAB 5: CREACIÓN DE VALOR PÚBLICO
 # ---------------------------------------------------------
